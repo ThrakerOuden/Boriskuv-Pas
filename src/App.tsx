@@ -26,8 +26,19 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
+const getEnvApiKey = (): string => {
+  try {
+    if (typeof process !== 'undefined' && process.env) {
+      return process.env.GEMINI_API_KEY || '';
+    }
+  } catch (e) {
+    // safe fallback
+  }
+  return '';
+};
+
 const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
+  apiKey: getEnvApiKey(),
 });
 
 type Subject = {
@@ -231,7 +242,7 @@ export default function App() {
       if (isAIStudio) {
         hasValidKey = await (window as any).aistudio.hasSelectedApiKey();
       } else {
-        const activeKey = customApiKey || process.env.GEMINI_API_KEY;
+        const activeKey = customApiKey || getEnvApiKey();
         hasValidKey = !!activeKey;
       }
 
@@ -245,8 +256,8 @@ export default function App() {
       }
 
       const activeKey = isAIStudio 
-        ? process.env.GEMINI_API_KEY 
-        : (customApiKey || process.env.GEMINI_API_KEY);
+        ? getEnvApiKey() 
+        : (customApiKey || getEnvApiKey());
 
       const apiInstance = new GoogleGenAI({
         apiKey: activeKey,
