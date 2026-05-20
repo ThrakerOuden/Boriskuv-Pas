@@ -299,7 +299,7 @@ export default function App() {
       ];
 
       // @ts-ignore - Using internal model name
-      const response = await apiInstance.models.generateContentStream({
+      const response = await apiInstance.models.generateContent({
         model: "gemini-3.1-flash-image-preview",
         config,
         contents,
@@ -307,12 +307,10 @@ export default function App() {
 
       let finalImageUrl = '';
 
-      for await (const chunk of response) {
-        if (chunk.candidates?.[0]?.content?.parts) {
-          for (const part of chunk.candidates[0].content.parts) {
-            if (part.inlineData) {
-              finalImageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-            }
+      if (response.candidates?.[0]?.content?.parts) {
+        for (const part of response.candidates[0].content.parts) {
+          if (part.inlineData) {
+            finalImageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
           }
         }
       }
