@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Libre Baskerville", serif;
+  --color-brand-orange: #FF6321;
+}
+
+body {
+  font-family: "Libre Baskerville", serif;
+  background-color: #FF6321;
+  color: #000000;
+  min-height: 100vh;
+}
+
+.list-item {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  padding: 12px 0;
+}
+
+.subtitle {
+  font-style: italic;
+}
+
+.country-tag {
+  font-style: italic;
+  font-size: 0.8em;
+  opacity: 0.8;
+}
+
+.footer-details {
+  font-size: 0.75rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.2);
+  padding-top: 16px;
+}
