@@ -28,18 +28,16 @@ import { motion, AnimatePresence } from 'motion/react';
 
 const getEnvApiKey = (): string => {
   try {
-    if (typeof process !== 'undefined' && process.env) {
-      return process.env.GEMINI_API_KEY || '';
+    // Vite's compile-time definition parses this token directly and replaces it during build.
+    const key = process.env.GEMINI_API_KEY;
+    if (typeof key === 'string' && key) {
+      return key;
     }
   } catch (e) {
     // safe fallback
   }
   return '';
 };
-
-const ai = new GoogleGenAI({
-  apiKey: getEnvApiKey(),
-});
 
 type Subject = {
   id: string;
