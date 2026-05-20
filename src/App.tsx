@@ -111,6 +111,12 @@ export default function App() {
   const [hasStarted, setHasStarted] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showKeyDialog, setShowKeyDialog] = useState(false);
+  const [customApiKey, setCustomApiKey] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('borisuv_pas_api_key') || '';
+    }
+    return '';
+  });
   
   // Config state
   const [selectedAspectRatio, setSelectedAspectRatio] = useState("9:16");
@@ -219,11 +225,32 @@ export default function App() {
 
     try {
       // Final key check before spending tokens
-      const keySelected = await (window as any).aistudio?.hasSelectedApiKey();
-      if (!keySelected) {
+      const isAIStudio = typeof window !== 'undefined' && !!(window as any).aistudio;
+      let hasValidKey = false;
+      
+      if (isAIStudio) {
+        hasValidKey = await (window as any).aistudio.hasSelectedApiKey();
+      } else {
+        const activeKey = customApiKey || process.env.GEMINI_API_KEY;
+        hasValidKey = !!activeKey;
+      }
+
+      if (!hasValidKey) {
         setShowKeyDialog(true);
+        setDestinations(prev => prev.map(adv => 
+          adv.id === newAdventure.id ? { ...adv, loading: false, error: "Chybí API klíč" } : adv
+        ));
+        setIsGenerating(false);
         return;
       }
+
+      const activeKey = isAIStudio 
+        ? process.env.GEMINI_API_KEY 
+        : (customApiKey || process.env.GEMINI_API_KEY);
+
+      const apiInstance = new GoogleGenAI({
+        apiKey: activeKey,
+      });
 
       const config = {
         imageConfig: {
@@ -263,7 +290,7 @@ export default function App() {
       ];
 
       // @ts-ignore - Using internal model name
-      const response = await ai.models.generateContentStream({
+      const response = await apiInstance.models.generateContentStream({
         model: "gemini-3.1-flash-image-preview",
         config,
         contents,
@@ -521,25 +548,47 @@ export default function App() {
                     <Info className="w-3 h-3" /> Důležité
                   </p>
                   <p className="text-sm leading-relaxed">
-                    Prosím, vyberte API klíč z placeného projektu Google Cloud.
-                    Správu svých klíčů a fakturace můžete provádět v{' '}
-                    <a 
-                      href="https://ai.google.dev/gemini-api/docs/billing" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="underline font-bold hover:text-brand-orange transition-colors"
-                    >
-                      dokumentaci k fakturaci Gemini API
-                    </a>.
+                    K běhu aplikace a generování obrázků je nezbytný API klíč pro Gemini API.
+                    {typeof window !== 'undefined' && !(window as any).aistudio ? (
+                      <span> Nastavit jej můžete buď zadáním klíče níže, nebo jeho konfigurací jako proměnné prostředí <code>GEMINI_API_KEY</code> v nastavení vašeho Netlify projektu.</span>
+                    ) : (
+                      <span> Prosím, vyberte API klíč z placeného projektu Google Cloud. Správu svých klíčů a fakturace můžete provádět v <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="underline font-bold hover:text-brand-orange transition-colors">dokumentaci k fakturaci Gemini API</a>.</span>
+                    )}
                   </p>
                 </div>
 
-                <button 
-                  onClick={handleOpenSelectKey}
-                  className="w-full py-4 px-8 rounded-2xl border-2 border-black bg-black text-white font-bold uppercase tracking-widest hover:bg-black/80 transition-all transform hover:scale-[1.02] active:scale-[0.98] focus:ring-4 focus:ring-black/20 focus:outline-none cursor-pointer"
-                >
-                  Vybrat API klíč
-                </button>
+                {typeof window !== 'undefined' && !(window as any).aistudio ? (
+                  <div className="text-left">
+                    <label className="block text-xs font-bold uppercase tracking-wider mb-2">Váš Gemini API klíč:</label>
+                    <input 
+                      type="password"
+                      placeholder="AIzaSy..."
+                      value={customApiKey}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCustomApiKey(val);
+                        localStorage.setItem('borisuv_pas_api_key', val);
+                      }}
+                      className="w-full p-4 rounded-xl border-2 border-black bg-white focus:outline-none focus:ring-2 focus:ring-brand-orange mb-4 text-sm font-mono shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                    />
+                    <p className="text-[11px] opacity-60 leading-relaxed mb-6">
+                      Klíč je bezpečně uložen pouze ve vašem vlastním prohlížeči (v paměti localStorage) a odesílá se napřímo přímo společnosti Google. Získat ho můžete zdarma na <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="underline font-bold hover:text-brand-orange">Google AI Studio</a>.
+                    </p>
+                    <button 
+                      onClick={() => setShowKeyDialog(false)}
+                      className="w-full py-4 px-6 rounded-2xl border-2 border-black bg-brand-orange text-white font-bold uppercase tracking-widest hover:bg-brand-orange/80 transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] cursor-pointer"
+                    >
+                      Uložit a pokračovat 🚀
+                    </button>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={handleOpenSelectKey}
+                    className="w-full py-4 px-8 rounded-2xl border-2 border-black bg-black text-white font-bold uppercase tracking-widest hover:bg-black/80 transition-all transform hover:scale-[1.02] active:scale-[0.98] focus:ring-4 focus:ring-black/20 focus:outline-none cursor-pointer shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                  >
+                    Vybrat API klíč
+                  </button>
+                )}
               </div>
             </motion.div>
           </div>
